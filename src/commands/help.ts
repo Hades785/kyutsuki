@@ -14,13 +14,21 @@ botCache.commands.set(`help`, {
   ],
   execute: function (message, args: HelpArgs) {
     if (!args.command) {
-      return sendMessage(message.channel, `No command provided.`);
+      return sendMessage(message.channelID, `No command provided.`);
     }
 
     const command = botCache.commands.get(args.command);
     if (!command) {
-      return sendMessage(message.channel, `Command ${args.command} not found.`);
+      return sendMessage(
+        message.channelID,
+        `Command ${args.command} not found.`,
+      );
     }
+
+    const description = translate(
+      message.guildID!,
+      `commands/${args.command}:DESCRIPTION`,
+    );
 
     const embed = new Embed()
       .setAuthor(
@@ -31,11 +39,11 @@ botCache.commands.set(`help`, {
         ),
       )
       .setDescription(
-        translate(message.guildID!, `commands/${args.command}:DESCRIPTION`),
+        description === "DESCRIPTION" ? command.description : description,
       );
 
-    sendMessage(
-      message.channel,
+    return sendMessage(
+      message.channelID,
       { embed },
     );
   },

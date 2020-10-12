@@ -1,6 +1,6 @@
 import { botCache } from "../../mod.ts";
 import { Milliseconds } from "../utils/constants/time.ts";
-import { botID, logger, cache } from "../../deps.ts";
+import { botID, cache } from "../../deps.ts";
 import { configs } from "../../configs.ts";
 
 botCache.tasks.set(`botlists`, {
@@ -19,6 +19,12 @@ botCache.tasks.set(`botlists`, {
 
     // Make the variable here to get the guild count accurately
     const botLists = [
+      {
+        name: "discordbots.co",
+        url: `https://api.discordbots.co/v1/public/bot/${botID}/stats`,
+        token: configs.botListTokens.DISCORD_BOTS_CO,
+        data: { serverCount: totalGuilds },
+      },
       {
         name: "discordbots.gg",
         url: `https://discordbots.org/api/bots/${botID}/stats`,
@@ -78,11 +84,11 @@ botCache.tasks.set(`botlists`, {
         },
         body: JSON.stringify(list.data),
       }).then(() => {
-        logger.success(
+        console.log(
           `Update Bot Lists: [${list.name}] ${totalGuilds} Guilds | ${totalUsers} Users`,
         );
       }).catch((err) => {
-        logger.error({ location: "botlists file", err });
+        console.error({ location: "botlists file", err });
       });
     }
   },
