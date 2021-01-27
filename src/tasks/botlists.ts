@@ -1,6 +1,5 @@
-import { botCache } from "../../mod.ts";
 import { Milliseconds } from "../utils/constants/time.ts";
-import { botID, cache } from "../../deps.ts";
+import { botCache, botID, cache } from "../../deps.ts";
 import { configs } from "../../configs.ts";
 
 botCache.tasks.set(`botlists`, {
@@ -77,7 +76,7 @@ botCache.tasks.set(`botlists`, {
       if (!list.token) continue;
       // Send update request to this bot list
       fetch(list.url, {
-        method: "post",
+        method: "POST",
         headers: {
           Authorization: list.token,
           "Content-Type": "application/json",

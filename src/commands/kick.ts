@@ -1,10 +1,8 @@
-import { Member, kick, sendMessage } from "../../deps.ts";
-
+import { Member } from "../../deps.ts";
 import { Embed } from "./../utils/Embed.ts";
-import { botCache } from "../../mod.ts";
-import { sendEmbed } from "../utils/helpers.ts";
+import { createCommand, sendEmbed } from "../utils/helpers.ts";
 
-botCache.commands.set(`kick`, {
+createCommand({
   name: `kick`,
   guildOnly: true,
   arguments: [
@@ -12,7 +10,7 @@ botCache.commands.set(`kick`, {
       name: "member",
       type: "member",
       missing: (message) => {
-        return sendMessage(message.channelID, "User not found!");
+        return message.reply("User not found!");
       },
     },
     {
@@ -29,7 +27,7 @@ botCache.commands.set(`kick`, {
   ],
   execute: async (message, args: KickArgs) => {
     try {
-      await kick(message.guildID, args.member.user.id, args.reason);
+      await args.member.kick(message.guildID, args.reason);
 
       const embed = new Embed()
         .setColor("#FFA500")
@@ -41,7 +39,7 @@ botCache.commands.set(`kick`, {
 
       return sendEmbed(message.channelID, embed);
     } catch (error) {
-      return sendMessage(message.channelID, "Attempt to kick user has failed!");
+      return message.send("Attempt to kick user has failed!");
     }
   },
 });

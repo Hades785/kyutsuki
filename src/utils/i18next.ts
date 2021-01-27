@@ -1,7 +1,6 @@
-import { botCache } from "../../mod.ts";
-import { cache, sendMessage } from "../../deps.ts";
-import i18next from "https://deno.land/x/i18next@v19.6.3/index.js";
-import Backend from "https://deno.land/x/i18next_fs_backend@v1.0.7/index.js";
+import { botCache, cache, sendMessage } from "../../deps.ts";
+import i18next from "https://deno.land/x/i18next@v19.8.4/index.js";
+import Backend from "https://deno.land/x/i18next_fs_backend@v1.0.8-rc.1/index.js";
 import { configs } from "../../configs.ts";
 
 /** This function helps translate the string to the specific guilds needs. */
@@ -31,7 +30,7 @@ export async function determineNamespaces(
       namespaces = await determineNamespaces(
         `${path}/${file.name}`,
         namespaces,
-        isLanguage ? "" : `${file.name}/`,
+        isLanguage ? "" : `${folderName + file.name}/`,
       );
     } else {
       namespaces.push(
@@ -94,4 +93,12 @@ export async function loadLanguages() {
       },
       // Silly bug in i18next needs a second param when unnecessary
     }, undefined);
+}
+
+export async function reloadLang(language?: string[]) {
+  const namespaces = await determineNamespaces(
+    Deno.realPathSync("./src/languages"),
+  );
+
+  i18next.reloadResources(language, namespaces, undefined);
 }

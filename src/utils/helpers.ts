@@ -1,44 +1,22 @@
-import type { Command } from "../types/commands.ts";
-import type { MessageContent, Message } from "../../deps.ts";
-import type { Embed } from "./Embed.ts";
-
+import { Command } from "../types/commands.ts";
+import { Embed } from "./Embed.ts";
 import {
+  botCache,
   Collection,
+  MessageContent,
+  Message,
   sendMessage,
   deleteMessageByID,
   editMessage,
+  cache,
 } from "../../deps.ts";
-import { botCache } from "../../mod.ts";
 import { Milliseconds } from "./constants/time.ts";
-
-/** This function should be used when you want to send a response that will @mention the user and delete it after a certain amount of seconds. By default, it will be deleted after 10 seconds. */
-export async function sendAlertResponse(
-  message: Message,
-  content: string | MessageContent,
-  timeout = 10,
-  reason = "",
-) {
-  const response = await sendResponse(message, content);
-  deleteMessageByID(response.channelID, response.id, reason, timeout * 1000);
-}
-
-/** This function should be used when you want to send a response that will @mention the user. */
-export function sendResponse(
-  message: Message,
-  content: string | MessageContent,
-) {
-  const mention = `<@!${message.author.id}>`;
-  const contentWithMention = typeof content === "string"
-    ? `${mention}, ${content}`
-    : { ...content, content: `${mention}, ${content.content}` };
-
-  return sendMessage(message.channelID, contentWithMention);
-}
 
 /** This function should be used when you want to convert milliseconds to a human readable format like 1d5h. */
 export function humanizeMilliseconds(milliseconds: number) {
   // Gets ms into seconds
   const time = milliseconds / 1000;
+  if (time < 1) return "1s";
 
   const days = Math.floor(time / 86400);
   const hours = Math.floor((time % 86400) / 3600);
@@ -96,41 +74,18 @@ export function stringToMilliseconds(text: string) {
   return total;
 }
 
-/** This function should be used to create command aliases. */
-export function createCommandAliases(
-  commandName: string,
-  aliases: string | string[],
-) {
-  if (typeof aliases === "string") aliases = [aliases];
-
-  const command = botCache.commands.get(commandName);
-  if (!command) return;
-
-  if (!command.aliases) {
-    command.aliases = aliases;
-    return;
-  }
-
-  for (const alias of aliases) {
-    if (command.aliases.includes(alias)) continue;
-    command.aliases.push(alias);
-  }
+export function createCommand(command: Command) {
+  botCache.commands.set(command.name, command);
 }
 
-export function createSubcommand(
-  commandName: string,
-  subcommand: Command,
-  retries = 0,
-) {
+export function createSubcommand(commandName: string, subcommand: Command, retries = 0) {
   const names = commandName.split("-");
 
   let command = botCache.commands.get(commandName);
 
   if (names.length > 1) {
     for (const name of names) {
-      const validCommand = command
-        ? command.subcommands?.get(name)
-        : botCache.commands.get(name);
+      const validCommand = command ? command.subcommands?.get(name) : botCache.commands.get(name);
       if (!validCommand) break;
 
       command = validCommand;
@@ -140,16 +95,11 @@ export function createSubcommand(
   if (!command) {
     // If 10 minutes have passed something must have been wrong
     if (retries === 20) {
-      return console.error(
-        `Subcommand ${subcommand} unable to be created for ${commandName}`,
-      );
+      return console.error(`Subcommand ${subcommand} unable to be created for ${commandName}`);
     }
 
     // Try again in 30 seconds in case this command file just has not been loaded yet.
-    setTimeout(
-      () => createSubcommand(commandName, subcommand, retries++),
-      30000,
-    );
+    setTimeout(() => createSubcommand(commandName, subcommand, retries++), 30000);
     return;
   }
 
@@ -172,23 +122,52 @@ export function editEmbed(message: Message, embed: Embed, content?: string) {
 
 // Very important to make sure files are reloaded properly
 let uniqueFilePathCounter = 0;
+let paths: string[] = [];
+
 /** This function allows reading all files in a folder. Useful for loading/reloading commands, monitors etc */
 export async function importDirectory(path: string) {
   const files = Deno.readDirSync(Deno.realPathSync(path));
+  const folder = path.substring(path.indexOf("/src/") + 5);
+  if (!folder.includes("/")) console.log(`Loading ${folder}...`);
 
   for (const file of files) {
     if (!file.name) continue;
 
-    const currentPath = `${path}/${file.name}`;
+    const currentPath = `${path}/${file.name}`.replaceAll("\\", "/");
     if (file.isFile) {
-      await import(`file:///${currentPath}#${uniqueFilePathCounter}`);
+      if (!currentPath.endsWith(".ts")) continue;
+      paths.push(
+        `import "${Deno.mainModule.substring(
+          0,
+          Deno.mainModule.lastIndexOf("/")
+        )}/${currentPath.substring(
+          currentPath.indexOf("src/")
+        )}#${uniqueFilePathCounter}";`
+      );
       continue;
     }
 
-    importDirectory(currentPath);
+    await importDirectory(currentPath);
   }
+
   uniqueFilePathCounter++;
 }
+
+/** Imports all everything in fileloader.ts */
+export async function fileLoader() {
+  await Deno.writeTextFile(
+    "fileloader.ts",
+    paths.join("\n").replaceAll("\\", "/")
+  );
+  await import(
+    `${Deno.mainModule.substring(
+      0,
+      Deno.mainModule.lastIndexOf("/")
+    )}/fileloader.ts#${uniqueFilePathCounter}`
+  );
+  paths = [];
+}
+
 
 export function getTime() {
   const now = new Date();
@@ -202,7 +181,9 @@ export function getTime() {
     hour = hour - 12;
   }
 
-  return `${hour >= 10 ? hour : `0${hour}`}:${
-    minute >= 10 ? minute : `0${minute}`
-  } ${amOrPm}`;
+  return `${hour >= 10 ? hour : `0${hour}`}:${minute >= 10 ? minute : `0${minute}`} ${amOrPm}`;
+}
+
+export function getCurrentLanguage(guildID: string) {
+  return botCache.guildLanguages.get(guildID) || cache.guilds.get(guildID)?.preferredLocale || 'en_US';
 }

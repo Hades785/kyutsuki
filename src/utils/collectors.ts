@@ -1,18 +1,13 @@
-import type {
-  Message,
-  MessageReactionUncachedPayload,
-  ReactionPayload,
-} from "../../deps.ts";
-import type {
+import {
   MessageCollectorOptions,
   ReactionCollectorOptions,
   CollectMessagesOptions,
   CollectReactionsOptions,
 } from "../types/collectors.ts";
-
-import { botID } from "../../deps.ts";
+import { botCache, botID, Message,
+  MessageReactionUncachedPayload,
+  ReactionPayload, } from "../../deps.ts";
 import { Milliseconds } from "./constants/time.ts";
-import { botCache } from "../../mod.ts";
 
 export async function needMessage(
   memberID: string,
@@ -35,6 +30,8 @@ export async function collectMessages(
   options: CollectMessagesOptions,
 ): Promise<Message[]> {
   return new Promise((resolve, reject) => {
+    botCache.messageCollectors.get(options.key)?.reject("A new collector began before the user responded to the previous one.");
+    
     botCache.messageCollectors.set(options.key, {
       ...options,
       messages: [],
@@ -65,6 +62,7 @@ export async function collectReactions(
   options: CollectReactionsOptions,
 ): Promise<string[]> {
   return new Promise((resolve, reject) => {
+    botCache.reactionCollectors.get(options.key)?.reject("A new collector began before the user responded to the previous one.");
     botCache.reactionCollectors.set(options.key, {
       ...options,
       reactions: [] as string[],
