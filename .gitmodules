@@ -1,0 +1,3 @@
+[submodule "lib/discordeno"]
+	path = lib/discordeno
+	url = git@github.com:Hades785/discordeno
