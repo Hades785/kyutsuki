@@ -2,7 +2,7 @@
 
 Kyutsuki is a Discord bot built with [Discordeno library](https://github.com/discordeno/discordeno) using the [Discordeno boilerplate repository](https://github.com/discordeno/discordeno-bot-template).
 
-This project uses a [fork of Discordeno](https://github.com/Hades785/discordeno) to patch some features in, and unnecessarily uses a submodule to have it on hand, but doing it this way is fun.
+<!-- This project uses a [fork of Discordeno](https://github.com/Hades785/discordeno) to patch some features in, and unnecessarily uses a submodule to have it on hand, but doing it this way is fun. -->
 
 ## Pre-requisites
 
